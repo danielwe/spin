@@ -81,8 +81,8 @@ class Interface(QtGui.QWidget):
         self.previousStylusProximity = None
         self.processStylusProximityMonitoring = Process(
             target=self.stylusProximityMonitoring)
-        # Do NOT enable stylus proximity monitoring by default
-        #self.stylusProximityMonitoringOn()
+        # Enable stylus proximity monitoring by default
+        self.stylusProximityMonitoringOn()
         # Prepare device state monitoring
         self.deviceState = "laptop"
         self.processDeviceStateMonitoring = Process(
