@@ -17,7 +17,7 @@ Options:
 #                                                                             #
 # spin                                                                        #
 #                                                                             #
-# version: 2014-04-14T2350                                                    #
+# version: 2014-04-15T0308                                                    #
 #                                                                             #
 ###############################################################################
 #                                                                             #
@@ -77,18 +77,18 @@ class Interface(QtGui.QWidget):
         super(Interface, self).__init__()
         LOGGER.info("running spin")
         # Prepare stylus proximity monitoring
-        self.stylusProximityStatus = None
-        self.previousStylusProximityStatus = None
+        self.stylusProximity = None
+        self.previousStylusProximity = None
         self.processStylusProximityMonitoring = Process(
             target=self.stylusProximityMonitoring)
         # Do NOT enable stylus proximity monitoring by default
         #self.stylusProximityMonitoringOn()
-        # Prepare display position monitoring
-        self.displayPositionStatus = "laptop"
-        self.processDisplayPositionMonitoring = Process(
-            target=self.displayPositionMonitoring)
-        # Enable display position monitoring by default
-        self.displayPositionMonitoringOn()
+        # Prepare device state monitoring
+        self.deviceState = "laptop"
+        self.processDeviceStateMonitoring = Process(
+            target=self.deviceStateMonitoring)
+        # Enable device state monitoring by default
+        self.deviceStateMonitoringOn()
         if docopt_args["--nogui"]:
             LOGGER.info("non-GUI mode")
         else:
@@ -97,12 +97,36 @@ class Interface(QtGui.QWidget):
     def closeEvent(self, event):
         LOGGER.info("stopping spin")
         self.stylusProximityMonitoringOff()
-        self.engageDisplayPositionMonitoringOff()
+        self.engageDeviceStateMonitoringOff()
         self.deleteLater()
 
     def createGUI(self):
         # create buttons
         buttonsList = []
+        # button: device state monitoring on
+        newbutton = QtGui.QPushButton(
+            'device state monitoring on', self)
+        newbutton.clicked.connect(
+            self.engageDeviceStateMonitoringOn)
+        buttonsList.append(newbutton)
+        # button: device state monitoring off
+        newbutton = QtGui.QPushButton(
+            'device state monitoring off', self)
+        newbutton.clicked.connect(
+            self.engageDeviceStateMonitoringOff)
+        buttonsList.append(newbutton)
+        # button: stylus proximity monitoring on
+        newbutton = QtGui.QPushButton(
+            'stylus proximity monitoring on', self)
+        newbutton.clicked.connect(
+            self.engageStylusProximityMonitoringOn)
+        buttonsList.append(newbutton)
+        # button: stylus proximity monitoring off
+        newbutton = QtGui.QPushButton(
+            'stylus proximity monitoring off', self)
+        newbutton.clicked.connect(
+            self.engageStylusProximityMonitoringOff)
+        buttonsList.append(newbutton)
         # button: tablet mode
         newbutton = QtGui.QPushButton('tablet mode', self)
         newbutton.clicked.connect(self.engageModeTablet)
@@ -111,20 +135,20 @@ class Interface(QtGui.QWidget):
         newbutton = QtGui.QPushButton('laptop mode', self)
         newbutton.clicked.connect(self.engageModeLaptop)
         buttonsList.append(newbutton)
-        # button: left
-        newbutton = QtGui.QPushButton('left', self)
+        # button: orientation left
+        newbutton = QtGui.QPushButton('orientation left', self)
         newbutton.clicked.connect(self.engageLeft)
         buttonsList.append(newbutton)
-        # button: right
-        newbutton = QtGui.QPushButton('right', self)
+        # button: orientation right
+        newbutton = QtGui.QPushButton('orientation right', self)
         newbutton.clicked.connect(self.engageRight)
         buttonsList.append(newbutton)
-        # button: inverted
-        newbutton = QtGui.QPushButton('inverted', self)
+        # button: orientation inverted
+        newbutton = QtGui.QPushButton('orientation inverted', self)
         newbutton.clicked.connect(self.engageInverted)
         buttonsList.append(newbutton)
-        # button: normal
-        newbutton = QtGui.QPushButton('normal', self)
+        # button: orientation normal
+        newbutton = QtGui.QPushButton('orientation normal', self)
         newbutton.clicked.connect(self.engageNormal)
         buttonsList.append(newbutton)
         # button: touchscreen on
@@ -151,30 +175,6 @@ class Interface(QtGui.QWidget):
         newbutton = QtGui.QPushButton('nipple off', self)
         newbutton.clicked.connect(self.engageNippleOff)
         buttonsList.append(newbutton)
-        # button: stylus proximity monitoring on
-        newbutton = QtGui.QPushButton(
-            'stylus proximity monitoring on', self)
-        newbutton.clicked.connect(
-            self.engageStylusProximityMonitoringOn)
-        buttonsList.append(newbutton)
-        # button: stylus proximity monitoring off
-        newbutton = QtGui.QPushButton(
-            'stylus proximity monitoring off', self)
-        newbutton.clicked.connect(
-            self.engageStylusProximityMonitoringOff)
-        buttonsList.append(newbutton)
-        # button: display position monitoring on
-        newbutton = QtGui.QPushButton(
-            'display position monitoring on', self)
-        newbutton.clicked.connect(
-            self.engageDisplayPositionMonitoringOn)
-        buttonsList.append(newbutton)
-        # button: display position monitoring off
-        newbutton = QtGui.QPushButton(
-            'display position monitoring off', self)
-        newbutton.clicked.connect(
-            self.engageDisplayPositionMonitoringOff)
-        buttonsList.append(newbutton)
         # set button dimensions
         buttonsWidth = 250
         buttonsHeight = 50
@@ -195,38 +195,38 @@ class Interface(QtGui.QWidget):
         self.show()
 
     def displayLeft(self):
-        LOGGER.info("changing display to left")
+        LOGGER.info("changing display orientation to left")
         os.system('xrandr -o left')
 
     def displayRight(self):
-        LOGGER.info("changing display to right")
+        LOGGER.info("changing display orientation to right")
         os.system('xrandr -o right')
 
     def displayInverted(self):
-        LOGGER.info("changing display to inverted")
+        LOGGER.info("changing display orientation to inverted")
         os.system('xrandr -o inverted')
 
     def displayNormal(self):
-        LOGGER.info("changing display to normal")
+        LOGGER.info("changing display orientation to normal")
         os.system('xrandr -o normal')
 
     def touchscreenLeft(self):
-        LOGGER.info("changing touchscreen to left")
+        LOGGER.info("changing touchscreen orientation to left")
         os.system('xinput set-prop "ELAN Touchscreen" '
                   '"Coordinate Transformation Matrix" 0 -1 1 1 0 0 0 0 1')
 
     def touchscreenRight(self):
-        LOGGER.info("changing touchscreen to right")
+        LOGGER.info("changing touchscreen orientation to right")
         os.system('xinput set-prop "ELAN Touchscreen" '
                   '"Coordinate Transformation Matrix" 0 1 0 -1 0 1 0 0 1')
 
     def touchscreenInverted(self):
-        LOGGER.info("changing touchscreen to inverted")
+        LOGGER.info("changing touchscreen orientation to inverted")
         os.system('xinput set-prop "ELAN Touchscreen" '
                   '"Coordinate Transformation Matrix" -1 0 1 0 -1 1 0 0 1')
 
     def touchscreenNormal(self):
-        LOGGER.info("changing touchscreen to normal")
+        LOGGER.info("changing touchscreen orientation to normal")
         os.system('xinput set-prop "ELAN Touchscreen" '
                   '"Coordinate Transformation Matrix" 1 0 0 0 1 0 0 0 1')
 
@@ -260,17 +260,17 @@ class Interface(QtGui.QWidget):
                                       '"Wacom ISDv4 EC Pen stylus" | '
                                       'grep Proximity | cut -d " " -f3 | '
                                       'cut -d "=" -f2')
-            self.stylusProximityStatus = subprocess.check_output(
+            self.stylusProximity = subprocess.check_output(
                 stylusProximityCommand, shell=True).lower().rstrip()
-            if ((self.stylusProximityStatus == "out") and
-                    (self.previousStylusProximityStatus != "out")):
+            if ((self.stylusProximity == "out") and
+                    (self.previousStylusProximity != "out")):
                 LOGGER.info("stylus inactive")
                 self.touchscreenOn()
-            elif ((self.stylusProximityStatus == "in") and
-                    (self.previousStylusProximityStatus != "in")):
+            elif ((self.stylusProximity == "in") and
+                    (self.previousStylusProximity != "in")):
                 LOGGER.info("stylus active")
                 self.touchscreenOff()
-            self.previousStylusProximityStatus = self.stylusProximityStatus
+            self.previousStylusProximity = self.stylusProximity
             time.sleep(0.25)
 
     def stylusProximityMonitoringOn(self):
@@ -285,40 +285,40 @@ class Interface(QtGui.QWidget):
             self.processStylusProximityMonitoring = Process(
                 target=self.stylusProximityMonitoring)
 
-    def displayPositionMonitoring(self):
+    def deviceStateMonitoring(self):
         socketACPI = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         socketACPI.connect("/var/run/acpid.socket")
-        LOGGER.info("display position is {a1}"
-                    .format(a1=self.displayPositionStatus))
+        LOGGER.info("device state is {a1}"
+                    .format(a1=self.deviceState))
         while True:
             eventACPI = socketACPI.recv(4096)
             if eventACPI == 'ibm/hotkey HKEY 00000080 000060c0\n':
-                LOGGER.info("display position change")
-                if self.displayPositionStatus == "laptop":
+                LOGGER.info("device state change")
+                if self.deviceState == "laptop":
                     self.engageModeTablet()
-                    #self.displayPositionStatus = "tablet"
-                elif self.displayPositionStatus == "tablet":
+                    #self.deviceState = "tablet"
+                elif self.deviceState == "tablet":
                     self.engageModeLaptop()
-                    #self.displayPositionStatus = "laptop"
-                LOGGER.info("display position is {a1}"
-                            .format(a1=self.displayPositionStatus))
+                    #self.deviceState = "laptop"
+                LOGGER.info("device state is {a1}"
+                            .format(a1=self.deviceState))
             time.sleep(0.25)
 
-    def displayPositionMonitoringOn(self):
-        if not self.processDisplayPositionMonitoring.is_alive():
-            LOGGER.info("changing display position monitoring to on")
-            self.processDisplayPositionMonitoring.start()
+    def deviceStateMonitoringOn(self):
+        if not self.processDeviceStateMonitoring.is_alive():
+            LOGGER.info("changing device state monitoring to on")
+            self.processDeviceStateMonitoring.start()
 
-    def displayPositionMonitoringOff(self):
-        if self.processDisplayPositionMonitoring.is_alive():
-            LOGGER.info("changing display position monitoring to off")
-            self.processDisplayPositionMonitoring.terminate()
-            self.processDisplayPositionMonitoring = Process(
-                target=self.displayPositionMonitoring)
+    def deviceStateMonitoringOff(self):
+        if self.processDeviceStateMonitoring.is_alive():
+            LOGGER.info("changing device state monitoring to off")
+            self.processDeviceStateMonitoring.terminate()
+            self.processDeviceStateMonitoring = Process(
+                target=self.deviceStateMonitoring)
 
     def engageModeTablet(self):
         LOGGER.info("engaging mode tablet")
-        self.displayPositionStatus = "tablet"
+        self.deviceState = "tablet"
         self.displayNormal()
         self.touchscreenNormal()
         self.touchscreenOn()
@@ -327,7 +327,7 @@ class Interface(QtGui.QWidget):
 
     def engageModeLaptop(self):
         LOGGER.info("engaging mode laptop")
-        self.displayPositionStatus = "laptop"
+        self.deviceState = "laptop"
         self.displayNormal()
         self.touchscreenNormal()
         self.touchscreenOn()
@@ -335,22 +335,22 @@ class Interface(QtGui.QWidget):
         self.nippleOn()
 
     def engageLeft(self):
-        LOGGER.info("engaging mode left")
+        #LOGGER.info("engaging orientation left")
         self.displayLeft()
         self.touchscreenLeft()
 
     def engageRight(self):
-        LOGGER.info("engaging mode right")
+        #LOGGER.info("engaging orientation right")
         self.displayRight()
         self.touchscreenRight()
 
     def engageInverted(self):
-        LOGGER.info("engaging mode inverted")
+        #LOGGER.info("engaging orientation inverted")
         self.displayInverted()
         self.touchscreenInverted()
 
     def engageNormal(self):
-        LOGGER.info("engaging mode normal")
+        #LOGGER.info("engaging orientation normal")
         self.displayNormal()
         self.touchscreenNormal()
 
@@ -378,11 +378,11 @@ class Interface(QtGui.QWidget):
     def engageStylusProximityMonitoringOff(self):
         self.stylusProximityMonitoringOff()
 
-    def engageDisplayPositionMonitoringOn(self):
-        self.displayPositionMonitoringOn()
+    def engageDeviceStateMonitoringOn(self):
+        self.deviceStateMonitoringOn()
 
-    def engageDisplayPositionMonitoringOff(self):
-        self.displayPositionMonitoringOff()
+    def engageDeviceStateMonitoringOff(self):
+        self.deviceStateMonitoringOff()
 
 
 def main(docopt_args):
