@@ -17,7 +17,7 @@ Options:
 #                                                                             #
 # spin                                                                        #
 #                                                                             #
-# version: 2014-04-15T0308                                                    #
+# version: 2014-04-23T0223                                                    #
 #                                                                             #
 ###############################################################################
 #                                                                             #
@@ -127,13 +127,21 @@ class Interface(QtGui.QWidget):
         newbutton.clicked.connect(
             self.engageStylusProximityMonitoringOff)
         buttonsList.append(newbutton)
+        # button: laptop mode
+        newbutton = QtGui.QPushButton('laptop mode', self)
+        newbutton.clicked.connect(self.engageModeLaptop)
+        buttonsList.append(newbutton)
         # button: tablet mode
         newbutton = QtGui.QPushButton('tablet mode', self)
         newbutton.clicked.connect(self.engageModeTablet)
         buttonsList.append(newbutton)
-        # button: laptop mode
-        newbutton = QtGui.QPushButton('laptop mode', self)
-        newbutton.clicked.connect(self.engageModeLaptop)
+        # button: orientation normal
+        newbutton = QtGui.QPushButton('orientation normal', self)
+        newbutton.clicked.connect(self.engageNormal)
+        buttonsList.append(newbutton)
+        # button: orientation inverted
+        newbutton = QtGui.QPushButton('orientation inverted', self)
+        newbutton.clicked.connect(self.engageInverted)
         buttonsList.append(newbutton)
         # button: orientation left
         newbutton = QtGui.QPushButton('orientation left', self)
@@ -142,14 +150,6 @@ class Interface(QtGui.QWidget):
         # button: orientation right
         newbutton = QtGui.QPushButton('orientation right', self)
         newbutton.clicked.connect(self.engageRight)
-        buttonsList.append(newbutton)
-        # button: orientation inverted
-        newbutton = QtGui.QPushButton('orientation inverted', self)
-        newbutton.clicked.connect(self.engageInverted)
-        buttonsList.append(newbutton)
-        # button: orientation normal
-        newbutton = QtGui.QPushButton('orientation normal', self)
-        newbutton.clicked.connect(self.engageNormal)
         buttonsList.append(newbutton)
         # button: touchscreen on
         newbutton = QtGui.QPushButton('touchscreen on', self)
@@ -194,96 +194,73 @@ class Interface(QtGui.QWidget):
         self.move(QtGui.QDesktopWidget().screenGeometry().width(), 0)
         self.show()
 
-    def displayLeft(self):
-        LOGGER.info("changing display orientation to left")
-        os.system('xrandr -o left')
+    def engageDeviceStateMonitoringOn(self):
+        self.deviceStateMonitoringOn()
 
-    def displayRight(self):
-        LOGGER.info("changing display orientation to right")
-        os.system('xrandr -o right')
+    def engageDeviceStateMonitoringOff(self):
+        self.deviceStateMonitoringOff()
 
-    def displayInverted(self):
-        LOGGER.info("changing display orientation to inverted")
-        os.system('xrandr -o inverted')
+    def engageStylusProximityMonitoringOn(self):
+        self.stylusProximityMonitoringOn()
 
-    def displayNormal(self):
-        LOGGER.info("changing display orientation to normal")
-        os.system('xrandr -o normal')
+    def engageStylusProximityMonitoringOff(self):
+        self.stylusProximityMonitoringOff()
 
-    def touchscreenLeft(self):
-        LOGGER.info("changing touchscreen orientation to left")
-        os.system('xinput set-prop "ELAN Touchscreen" '
-                  '"Coordinate Transformation Matrix" 0 -1 1 1 0 0 0 0 1')
+    def engageModeLaptop(self):
+        LOGGER.info("engaging mode laptop")
+        self.deviceState = "laptop"
+        self.displayNormal()
+        self.touchscreenNormal()
+        self.touchscreenOn()
+        self.touchpadOn()
+        self.nippleOn()
 
-    def touchscreenRight(self):
-        LOGGER.info("changing touchscreen orientation to right")
-        os.system('xinput set-prop "ELAN Touchscreen" '
-                  '"Coordinate Transformation Matrix" 0 1 0 -1 0 1 0 0 1')
+    def engageModeTablet(self):
+        LOGGER.info("engaging mode tablet")
+        self.deviceState = "tablet"
+        self.displayNormal()
+        self.touchscreenNormal()
+        self.touchscreenOn()
+        self.touchpadOff()
+        self.nippleOff()
 
-    def touchscreenInverted(self):
-        LOGGER.info("changing touchscreen orientation to inverted")
-        os.system('xinput set-prop "ELAN Touchscreen" '
-                  '"Coordinate Transformation Matrix" -1 0 1 0 -1 1 0 0 1')
+    def engageNormal(self):
+        #LOGGER.info("engaging orientation normal")
+        self.displayNormal()
+        self.touchscreenNormal()
 
-    def touchscreenNormal(self):
-        LOGGER.info("changing touchscreen orientation to normal")
-        os.system('xinput set-prop "ELAN Touchscreen" '
-                  '"Coordinate Transformation Matrix" 1 0 0 0 1 0 0 0 1')
+    def engageInverted(self):
+        #LOGGER.info("engaging orientation inverted")
+        self.displayInverted()
+        self.touchscreenInverted()
 
-    def touchscreenOn(self):
-        LOGGER.info("changing touchscreen to on")
-        os.system('xinput enable "ELAN Touchscreen"')
+    def engageLeft(self):
+        #LOGGER.info("engaging orientation left")
+        self.displayLeft()
+        self.touchscreenLeft()
 
-    def touchscreenOff(self):
-        LOGGER.info("changing touchscreen to off")
-        os.system('xinput disable "ELAN Touchscreen"')
+    def engageRight(self):
+        #LOGGER.info("engaging orientation right")
+        self.displayRight()
+        self.touchscreenRight()
 
-    def touchpadOn(self):
-        LOGGER.info("changing touchpad to on")
-        os.system('xinput enable "SynPS/2 Synaptics TouchPad"')
+    def engageTouchscreenOn(self):
+        self.touchscreenOn()
 
-    def touchpadOff(self):
-        LOGGER.info("changing touchpad to off")
-        os.system('xinput disable "SynPS/2 Synaptics TouchPad"')
+    def engageTouchscreenOff(self):
+        self.touchscreenOff()
 
-    def nippleOn(self):
-        LOGGER.info("changing nipple to on")
-        os.system('xinput enable "TPPS/2 IBM TrackPoint"')
+    def engageTouchpadOn(self):
+        self.touchpadOn()
 
-    def nippleOff(self):
-        LOGGER.info("changing nipple to off")
-        os.system('xinput disable "TPPS/2 IBM TrackPoint"')
+    def engageTouchpadOff(self):
+        self.touchpadOff()
 
-    def stylusProximityMonitoring(self):
-        while True:
-            stylusProximityCommand = ('xinput query-state '
-                                      '"Wacom ISDv4 EC Pen stylus" | '
-                                      'grep Proximity | cut -d " " -f3 | '
-                                      'cut -d "=" -f2')
-            self.stylusProximity = subprocess.check_output(
-                stylusProximityCommand, shell=True).lower().rstrip()
-            if ((self.stylusProximity == "out") and
-                    (self.previousStylusProximity != "out")):
-                LOGGER.info("stylus inactive")
-                self.touchscreenOn()
-            elif ((self.stylusProximity == "in") and
-                    (self.previousStylusProximity != "in")):
-                LOGGER.info("stylus active")
-                self.touchscreenOff()
-            self.previousStylusProximity = self.stylusProximity
-            time.sleep(0.25)
+    def engageNippleOn(self):
+        self.nippleOn()
 
-    def stylusProximityMonitoringOn(self):
-        if not self.processStylusProximityMonitoring.is_alive():
-            LOGGER.info("changing stylus proximity monitoring to on")
-            self.processStylusProximityMonitoring.start()
-
-    def stylusProximityMonitoringOff(self):
-        if self.processStylusProximityMonitoring.is_alive():
-            LOGGER.info("changing stylus proximity monitoring to off")
-            self.processStylusProximityMonitoring.terminate()
-            self.processStylusProximityMonitoring = Process(
-                target=self.stylusProximityMonitoring)
+    def engageNippleOff(self):
+        self.nippleOff()
 
     def deviceStateMonitoring(self):
         socketACPI = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
@@ -316,73 +293,96 @@ class Interface(QtGui.QWidget):
             self.processDeviceStateMonitoring = Process(
                 target=self.deviceStateMonitoring)
 
-    def engageModeTablet(self):
-        LOGGER.info("engaging mode tablet")
-        self.deviceState = "tablet"
-        self.displayNormal()
-        self.touchscreenNormal()
-        self.touchscreenOn()
-        self.touchpadOff()
-        self.nippleOff()
+    def stylusProximityMonitoring(self):
+        while True:
+            stylusProximityCommand = ('xinput query-state '
+                                      '"Wacom ISDv4 EC Pen stylus" | '
+                                      'grep Proximity | cut -d " " -f3 | '
+                                      'cut -d "=" -f2')
+            self.stylusProximity = subprocess.check_output(
+                stylusProximityCommand, shell=True).lower().rstrip()
+            if ((self.stylusProximity == "out") and
+                    (self.previousStylusProximity != "out")):
+                LOGGER.info("stylus inactive")
+                self.touchscreenOn()
+            elif ((self.stylusProximity == "in") and
+                    (self.previousStylusProximity != "in")):
+                LOGGER.info("stylus active")
+                self.touchscreenOff()
+            self.previousStylusProximity = self.stylusProximity
+            time.sleep(0.25)
 
-    def engageModeLaptop(self):
-        LOGGER.info("engaging mode laptop")
-        self.deviceState = "laptop"
-        self.displayNormal()
-        self.touchscreenNormal()
-        self.touchscreenOn()
-        self.touchpadOn()
-        self.nippleOn()
+    def stylusProximityMonitoringOn(self):
+        if not self.processStylusProximityMonitoring.is_alive():
+            LOGGER.info("changing stylus proximity monitoring to on")
+            self.processStylusProximityMonitoring.start()
 
-    def engageLeft(self):
-        #LOGGER.info("engaging orientation left")
-        self.displayLeft()
-        self.touchscreenLeft()
+    def stylusProximityMonitoringOff(self):
+        if self.processStylusProximityMonitoring.is_alive():
+            LOGGER.info("changing stylus proximity monitoring to off")
+            self.processStylusProximityMonitoring.terminate()
+            self.processStylusProximityMonitoring = Process(
+                target=self.stylusProximityMonitoring)
 
-    def engageRight(self):
-        #LOGGER.info("engaging orientation right")
-        self.displayRight()
-        self.touchscreenRight()
+    def displayNormal(self):
+        LOGGER.info("changing display orientation to normal")
+        os.system('xrandr -o normal')
 
-    def engageInverted(self):
-        #LOGGER.info("engaging orientation inverted")
-        self.displayInverted()
-        self.touchscreenInverted()
+    def displayInverted(self):
+        LOGGER.info("changing display orientation to inverted")
+        os.system('xrandr -o inverted')
 
-    def engageNormal(self):
-        #LOGGER.info("engaging orientation normal")
-        self.displayNormal()
-        self.touchscreenNormal()
+    def displayLeft(self):
+        LOGGER.info("changing display orientation to left")
+        os.system('xrandr -o left')
 
-    def engageTouchscreenOn(self):
-        self.touchscreenOn()
+    def displayRight(self):
+        LOGGER.info("changing display orientation to right")
+        os.system('xrandr -o right')
 
-    def engageTouchscreenOff(self):
-        self.touchscreenOff()
+    def touchscreenNormal(self):
+        LOGGER.info("changing touchscreen orientation to normal")
+        os.system('xinput set-prop "ELAN Touchscreen" '
+                  '"Coordinate Transformation Matrix" 1 0 0 0 1 0 0 0 1')
 
-    def engageTouchpadOn(self):
-        self.touchpadOn()
+    def touchscreenInverted(self):
+        LOGGER.info("changing touchscreen orientation to inverted")
+        os.system('xinput set-prop "ELAN Touchscreen" '
+                  '"Coordinate Transformation Matrix" -1 0 1 0 -1 1 0 0 1')
 
-    def engageTouchpadOff(self):
-        self.touchpadOff()
+    def touchscreenLeft(self):
+        LOGGER.info("changing touchscreen orientation to left")
+        os.system('xinput set-prop "ELAN Touchscreen" '
+                  '"Coordinate Transformation Matrix" 0 -1 1 1 0 0 0 0 1')
 
-    def engageNippleOn(self):
-        self.nippleOn()
+    def touchscreenRight(self):
+        LOGGER.info("changing touchscreen orientation to right")
+        os.system('xinput set-prop "ELAN Touchscreen" '
+                  '"Coordinate Transformation Matrix" 0 1 0 -1 0 1 0 0 1')
 
-    def engageNippleOff(self):
-        self.nippleOff()
+    def touchscreenOn(self):
+        LOGGER.info("changing touchscreen to on")
+        os.system('xinput enable "ELAN Touchscreen"')
 
-    def engageStylusProximityMonitoringOn(self):
-        self.stylusProximityMonitoringOn()
+    def touchscreenOff(self):
+        LOGGER.info("changing touchscreen to off")
+        os.system('xinput disable "ELAN Touchscreen"')
 
-    def engageStylusProximityMonitoringOff(self):
-        self.stylusProximityMonitoringOff()
+    def touchpadOn(self):
+        LOGGER.info("changing touchpad to on")
+        os.system('xinput enable "SynPS/2 Synaptics TouchPad"')
 
-    def engageDeviceStateMonitoringOn(self):
-        self.deviceStateMonitoringOn()
+    def touchpadOff(self):
+        LOGGER.info("changing touchpad to off")
+        os.system('xinput disable "SynPS/2 Synaptics TouchPad"')
 
-    def engageDeviceStateMonitoringOff(self):
-        self.deviceStateMonitoringOff()
+    def nippleOn(self):
+        LOGGER.info("changing nipple to on")
+        os.system('xinput enable "TPPS/2 IBM TrackPoint"')
+
+    def nippleOff(self):
+        LOGGER.info("changing nipple to off")
+        os.system('xinput disable "TPPS/2 IBM TrackPoint"')
 
 
 def main(docopt_args):
