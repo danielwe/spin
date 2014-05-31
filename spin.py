@@ -17,7 +17,7 @@ Options:
 #                                                                             #
 # spin                                                                        #
 #                                                                             #
-# version: 2014-04-23T0223                                                    #
+# version: 2014-05-31T0340                                                    #
 #                                                                             #
 ###############################################################################
 #                                                                             #
@@ -263,13 +263,14 @@ class Interface(QtGui.QWidget):
         self.nippleOff()
 
     def deviceStateMonitoring(self):
-        socketACPI = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        socketACPI.connect("/var/run/acpid.socket")
-        LOGGER.info("device state is {a1}"
-                    .format(a1=self.deviceState))
+        acpi_socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        acpi_socket.connect("/var/run/acpid.socket")
+        acpi_triggerevents = ['ibm/hotkey HKEY 00000080 000060c0\n',
+                              'ibm/hotkey LEN0068:00 00000080 000060c0\n']
+        LOGGER.info("device state is {a1}".format(a1=self.deviceState))
         while True:
-            eventACPI = socketACPI.recv(4096)
-            if eventACPI == 'ibm/hotkey HKEY 00000080 000060c0\n':
+            acpi_event = acpi_socket.recv(4096)
+            if acpi_event in acpi_triggerevents:
                 LOGGER.info("device state change")
                 if self.deviceState == "laptop":
                     self.engageModeTablet()
@@ -277,8 +278,7 @@ class Interface(QtGui.QWidget):
                 elif self.deviceState == "tablet":
                     self.engageModeLaptop()
                     #self.deviceState = "laptop"
-                LOGGER.info("device state is {a1}"
-                            .format(a1=self.deviceState))
+                LOGGER.info("device state is {a1}".format(a1=self.deviceState))
             time.sleep(0.25)
 
     def deviceStateMonitoringOn(self):
