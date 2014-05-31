@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""spin, a small utility to assist in setting usage modes of hybrid devices
+"""spin, a convenience utility for laptop/tablet devices running Linux.
 
 Usage:
     spin.py
@@ -17,7 +17,7 @@ Options:
 #                                                                             #
 # spin                                                                        #
 #                                                                             #
-# version: 2014-05-31T0340                                                    #
+# version: 2014-05-31T0608                                                    #
 #                                                                             #
 ###############################################################################
 #                                                                             #
@@ -58,7 +58,7 @@ import time
 from PyQt4 import QtGui
 import logging
 
-# Disable irrelevant pylint error messages
+# Disable selected pylint error messages
 #C0103: Invalid %s name "%s"
 #C0111: Missing %s docstring
 #R0904: Too many public methods (%s/%s)
@@ -72,32 +72,31 @@ LOGGER.level = logging.INFO
 
 
 class Interface(QtGui.QWidget):
-    def __init__(self, docopt_args=None):
-        self.docopt_args = docopt_args
+    def __init__(self, args=None):
+        self.args = args
         super(Interface, self).__init__()
         LOGGER.info("running spin")
-        # Prepare stylus proximity monitoring
+        # Prepare palm rejection
         self.stylusProximity = None
         self.previousStylusProximity = None
-        self.processStylusProximityMonitoring = Process(
-            target=self.stylusProximityMonitoring)
-        # Enable stylus proximity monitoring by default
-        self.stylusProximityMonitoringOn()
+        self.processPalmRejection = Process(target=self.palmRejection)
+        # Enable palm rejection by default
+        self.palmRejectionOn()
         # Prepare device state monitoring
         self.deviceState = "laptop"
         self.processDeviceStateMonitoring = Process(
             target=self.deviceStateMonitoring)
         # Enable device state monitoring by default
         self.deviceStateMonitoringOn()
-        if docopt_args["--nogui"]:
+        if args["--nogui"]:
             LOGGER.info("non-GUI mode")
         else:
             self.createGUI()
 
     def closeEvent(self, event):
         LOGGER.info("stopping spin")
-        self.stylusProximityMonitoringOff()
-        self.engageDeviceStateMonitoringOff()
+        self.palmRejectionOff()
+        self.deviceStateMonitoringOff()
         self.deleteLater()
 
     def createGUI(self):
@@ -115,17 +114,17 @@ class Interface(QtGui.QWidget):
         newbutton.clicked.connect(
             self.engageDeviceStateMonitoringOff)
         buttonsList.append(newbutton)
-        # button: stylus proximity monitoring on
+        # button: palm rejection on
         newbutton = QtGui.QPushButton(
-            'stylus proximity monitoring on', self)
+            'palm rejection on', self)
         newbutton.clicked.connect(
-            self.engageStylusProximityMonitoringOn)
+            self.engagePalmRejectionOn)
         buttonsList.append(newbutton)
-        # button: stylus proximity monitoring off
+        # button: palm rejection off
         newbutton = QtGui.QPushButton(
-            'stylus proximity monitoring off', self)
+            'palm rejection off', self)
         newbutton.clicked.connect(
-            self.engageStylusProximityMonitoringOff)
+            self.engagePalmRejectionOff)
         buttonsList.append(newbutton)
         # button: laptop mode
         newbutton = QtGui.QPushButton('laptop mode', self)
@@ -200,14 +199,13 @@ class Interface(QtGui.QWidget):
     def engageDeviceStateMonitoringOff(self):
         self.deviceStateMonitoringOff()
 
-    def engageStylusProximityMonitoringOn(self):
-        self.stylusProximityMonitoringOn()
+    def engagePalmRejectionOn(self):
+        self.palmRejectionOn()
 
-    def engageStylusProximityMonitoringOff(self):
-        self.stylusProximityMonitoringOff()
+    def engagePalmRejectionOff(self):
+        self.palmRejectionOff()
 
     def engageModeLaptop(self):
-        LOGGER.info("engaging mode laptop")
         self.deviceState = "laptop"
         self.displayNormal()
         self.touchscreenNormal()
@@ -216,7 +214,6 @@ class Interface(QtGui.QWidget):
         self.nippleOn()
 
     def engageModeTablet(self):
-        LOGGER.info("engaging mode tablet")
         self.deviceState = "tablet"
         self.displayNormal()
         self.touchscreenNormal()
@@ -225,22 +222,18 @@ class Interface(QtGui.QWidget):
         self.nippleOff()
 
     def engageNormal(self):
-        #LOGGER.info("engaging orientation normal")
         self.displayNormal()
         self.touchscreenNormal()
 
     def engageInverted(self):
-        #LOGGER.info("engaging orientation inverted")
         self.displayInverted()
         self.touchscreenInverted()
 
     def engageLeft(self):
-        #LOGGER.info("engaging orientation left")
         self.displayLeft()
         self.touchscreenLeft()
 
     def engageRight(self):
-        #LOGGER.info("engaging orientation right")
         self.displayRight()
         self.touchscreenRight()
 
@@ -274,10 +267,8 @@ class Interface(QtGui.QWidget):
                 LOGGER.info("device state change")
                 if self.deviceState == "laptop":
                     self.engageModeTablet()
-                    #self.deviceState = "tablet"
                 elif self.deviceState == "tablet":
                     self.engageModeLaptop()
-                    #self.deviceState = "laptop"
                 LOGGER.info("device state is {a1}".format(a1=self.deviceState))
             time.sleep(0.25)
 
@@ -293,7 +284,7 @@ class Interface(QtGui.QWidget):
             self.processDeviceStateMonitoring = Process(
                 target=self.deviceStateMonitoring)
 
-    def stylusProximityMonitoring(self):
+    def palmRejection(self):
         while True:
             stylusProximityCommand = ('xinput query-state '
                                       '"Wacom ISDv4 EC Pen stylus" | '
@@ -301,28 +292,27 @@ class Interface(QtGui.QWidget):
                                       'cut -d "=" -f2')
             self.stylusProximity = subprocess.check_output(
                 stylusProximityCommand, shell=True).lower().rstrip()
-            if ((self.stylusProximity == "out") and
-                    (self.previousStylusProximity != "out")):
+            if (self.stylusProximity == "out" and
+               self.previousStylusProximity != "out"):
                 LOGGER.info("stylus inactive")
                 self.touchscreenOn()
-            elif ((self.stylusProximity == "in") and
-                    (self.previousStylusProximity != "in")):
+            elif (self.stylusProximity == "in" and
+                  self.previousStylusProximity != "in"):
                 LOGGER.info("stylus active")
                 self.touchscreenOff()
             self.previousStylusProximity = self.stylusProximity
             time.sleep(0.25)
 
-    def stylusProximityMonitoringOn(self):
-        if not self.processStylusProximityMonitoring.is_alive():
-            LOGGER.info("changing stylus proximity monitoring to on")
-            self.processStylusProximityMonitoring.start()
+    def palmRejectionOn(self):
+        if not self.processPalmRejection.is_alive():
+            LOGGER.info("changing palm rejection to on")
+            self.processPalmRejection.start()
 
-    def stylusProximityMonitoringOff(self):
-        if self.processStylusProximityMonitoring.is_alive():
-            LOGGER.info("changing stylus proximity monitoring to off")
-            self.processStylusProximityMonitoring.terminate()
-            self.processStylusProximityMonitoring = Process(
-                target=self.stylusProximityMonitoring)
+    def palmRejectionOff(self):
+        if self.processPalmRejection.is_alive():
+            LOGGER.info("changing palm rejection to off")
+            self.processPalmRejection.terminate()
+            self.processPalmRejection = Process(target=self.palmRejection)
 
     def displayNormal(self):
         LOGGER.info("changing display orientation to normal")
@@ -385,12 +375,11 @@ class Interface(QtGui.QWidget):
         os.system('xinput disable "TPPS/2 IBM TrackPoint"')
 
 
-def main(docopt_args):
+def main(args):
     application = QtGui.QApplication(sys.argv)
-    Interface(docopt_args)
+    Interface(args)
     sys.exit(application.exec_())
 
 
 if __name__ == '__main__':
-    args = docopt(__doc__)
-    main(args)
+    main(docopt(__doc__))
